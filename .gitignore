@@ -1,3 +1,6 @@
 venv/
 media/
 **/__pycache__/
+*.egg-info/
+src/nba_manim/data/raw_cache/
+src/nba_manim/data/cache/

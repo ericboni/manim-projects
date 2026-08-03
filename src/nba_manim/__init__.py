@@ -22,14 +22,13 @@ from nba_manim.theme import (
     TEAM_COLORS,
     team_colors,
 )
-"""
 from nba_manim.config import (
     CourtDimensions,
     PATHS,
     RenderDefaults,
     DataConfig,
 )
-"""
+
 __version__ = "0.1.0"
 
 __all__ = [
