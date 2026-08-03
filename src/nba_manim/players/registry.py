@@ -25,7 +25,7 @@ from functools import lru_cache
 
 import pandas as pd
 
-from nba_manim.config import PATHS
+#from nba_manim.config import PATHS
 
 REGISTRY_PATH = Path(__file__).parent / "registry.csv"
 
@@ -37,7 +37,7 @@ FUZZY_MATCH_CUTOFF = 0.75
 @lru_cache(maxsize=1)
 def _load_registry() -> pd.DataFrame:
     df = pd.read_csv(REGISTRY_PATH, dtype=str)
-    df["nba_api_id"] = pd.to_numeric(df["nba_api_id"], errors="coerce").astype("Int64")
+    #df["nba_api_id"] = pd.to_numeric(df["nba_api_id"], errors="coerce").astype("Int64")
     return df
 
 
@@ -95,8 +95,8 @@ def headshot_path(player_id: str) -> Path:
     a name correction in registry.csv never breaks the asset reference.
     Does not guarantee the file exists — see players/NOTES.md re: sourcing.
     """
-    return PATHS["headshots"] / f"{player_id}.png"
-
+    #return PATHS["headshots"] / f"{player_id}.png"
+    pass
 
 def all_players() -> pd.DataFrame:
     """Full registry table, e.g. for building a video's candidate list."""
