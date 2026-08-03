@@ -1,0 +1,8 @@
+player_id,full_name,aliases,birth_year,draft_year,nba_api_id,bref_slug,spotrac_slug,primary_team_abbr,notes
+lebron_james,LeBron James,LeBron|LBJ|King James|Bron,1984,2003,2544,jamesle01,lebron-james,PHI,"Cavs/Heat/Cavs/Lakers/76ers"
+james_harden,James Harden,Harden|The Beard,1989,2009,201935,hardeja01,james-harden,LAC,"Thunder/Rockets/Nets/76ers/Clippers"
+stephen_curry,Stephen Curry,Steph Curry|Steph,1988,2009,201939,curryst01,stephen-curry,GSW,
+kevin_durant,Kevin Durant,KD|Durantula,1988,2007,201142,duranke01,kevin-durant,HOU,"Sonics/Thunder/Warriors/Nets/Suns/Rockets"
+joel_embiid,Joel Embiid,Embiid|The Process,1994,2014,203954,embiijo01,joel-embiid,PHI,
+tyrese_maxey,Tyrese Maxey,Maxey,2000,2020,1630178,maxeyty01,tyrese-maxey,PHI,
+jaylen_brown,Jaylen Brown,Brown,1996,2016,1627759,brownja02,jaylen-brown,PHI,"Celtics/76ers"
