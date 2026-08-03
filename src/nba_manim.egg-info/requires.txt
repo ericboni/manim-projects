@@ -1,5 +1,0 @@
-manim
-pandas
-requests
-nba_api
-lxml

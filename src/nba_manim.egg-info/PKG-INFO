@@ -1,9 +1,0 @@
-Metadata-Version: 2.4
-Name: nba-manim
-Version: 0.1.0
-Requires-Python: >=3.10
-Requires-Dist: manim
-Requires-Dist: pandas
-Requires-Dist: requests
-Requires-Dist: nba_api
-Requires-Dist: lxml
