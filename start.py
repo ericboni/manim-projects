@@ -15,7 +15,7 @@ class NBADraftMatrix(Scene):
     def construct(self):
         # --- Configuration ---
         start_year = 2010  # Adjust this to whatever starting year you want
-        rows = 15          # 15 years of draft data
+        rows = 20          # 15 years of draft data
         picks_per_round = 30 
         
         # Sizing and spacing
@@ -31,7 +31,6 @@ class NBADraftMatrix(Scene):
         matrix = VGroup()
         
         # 2D list to store individual square references for future animations
-        # Access a square using: self.grid[row_index][column_index] (0 to 59)
         self.grid = []
 
         # --- 1. Building the Layout ---
@@ -50,10 +49,8 @@ class NBADraftMatrix(Scene):
             # Build Round 1 (Picks 1-30)
             for c in range(picks_per_round):
                 sq = Square(side_length=square_size)
-                random_color = random.choice(sample_colors)
-                random_color = WHITE
-                sq.set_fill(random_color, opacity=0.7)
-                sq.set_stroke(random_color, width=1)
+                sq.set_fill(GREY, opacity=0.7)
+                sq.set_stroke(GREY, width=1)
                 
                 round1_group.add(sq)
                 grid_row.append(sq)
@@ -61,10 +58,8 @@ class NBADraftMatrix(Scene):
             # Build Round 2 (Picks 31-60)
             for c in range(picks_per_round):
                 sq = Square(side_length=square_size)
-                random_color = random.choice(sample_colors)
-                random_color = GREY
-                sq.set_fill(random_color, opacity=0.7)
-                sq.set_stroke(random_color, width=1)
+                sq.set_fill(GREY, opacity=0.7)
+                sq.set_stroke(GREY, width=1)
                 
                 round2_group.add(sq)
                 grid_row.append(sq)
@@ -73,8 +68,7 @@ class NBADraftMatrix(Scene):
             round1_group.arrange(RIGHT, buff=square_buff)
             round2_group.arrange(RIGHT, buff=square_buff)
             
-            # Assemble the complete row from left to right:
-            # [Year Label] -> [Round 1] -> [Gap] -> [Round 2]
+            # Assemble the complete row
             row_master_group.add(year_label)
             row_master_group.add(round1_group)
             row_master_group.add(round2_group)
@@ -89,7 +83,7 @@ class NBADraftMatrix(Scene):
             matrix.add(row_master_group)
             self.grid.append(grid_row)
 
-        # Arrange all 10 rows vertically
+        # Arrange all rows vertically
         matrix.arrange(DOWN, buff=row_buff)
         
         # Center everything on the screen
@@ -97,13 +91,11 @@ class NBADraftMatrix(Scene):
 
         # --- 2. Intro Animation (Row by Row) ---
         for r in range(rows):
-            # Target the components of the current row group
             current_year_text = matrix[r][0]
             current_round1 = matrix[r][1]
             current_round2 = matrix[r][2]
             
             self.play(
-                # Fade the text in slightly faster than the squares sweep
                 FadeIn(current_year_text, shift=RIGHT, run_time=0.25),
                 LaggedStart(
                     *[FadeIn(sq, scale=0.3) for sq in current_round1], 
@@ -116,45 +108,120 @@ class NBADraftMatrix(Scene):
         self.wait(3)
 
         # --- 3. Dynamic Targeted Selection Example ---
-        # Note: self.grid[row][column] mapping remains perfectly intact!
-        # Let's cleanly animate Pick 1 (Index 0) and Pick 31 (Index 30) of the first year (Index 0)
-        
         notable_picks = [
-                    (0, 0),   # 2015, Pick 1 
-                    (0, 12),  # 2015, Pick 13
-                    (1, 26),  # 2016, Pick 27
-                    (3, 40),  # 2018, Pick 41
-                    (4, 1),   # 2019, Pick 2
-                    (5, 59),  # 2020, Pick 60
-                    (8, 0),   # 2023, Pick 1
-                    (9, 13)   # 2024, Pick 14
+                    (0, 0),   # 2010, Pick 1 
+                    (0, 12),  # 2010, Pick 13
+                    (1, 26),  # 2011, Pick 27
+                    (3, 40),  # 2013, Pick 41
+                    (4, 1),   # 2014, Pick 2
+                    (5, 59),  # 2015, Pick 60
+                    (8, 0),   # 2018, Pick 1
+                    (9, 13)   # 2019, Pick 14
                 ]
 
-        # This list will hold all individual transform animations generated below
         star_transforms = []
 
         for r, c in notable_picks:
             old_square = self.grid[r][c]
             
-            # 1. Spawn a Star at the exact center of the square we want to morph
-            # n_effects=5 creates a standard 5-pointed star. Adjust inner_radius for sharpness.
             star = Star(inner_radius=0.05, outer_radius=0.12, color=GOLD)
             star.set_fill(GOLD, opacity=1)
             star.set_stroke(GOLD_A, width=1)
             star.move_to(old_square.get_center())
             
-            # 2. Package the transformation command into our animation array
             star_transforms.append(ReplacementTransform(old_square, star))
-            
-            # 3. Update the tracking grid reference so future animations know it's a star
             self.grid[r][c] = star
 
-        # 4. Trigger all the star transformations dynamically using Python unpacking (*)
-        # We can wrap it in LaggedStart to make the conversions ripple sequentially
         self.play(
             LaggedStart(*star_transforms, lag_ratio=0.4),
             run_time=5
         )
         self.wait(2)
+
+        # Fade out all picks except column 0
+        fade_out = []
+        for row in range(rows):
+            for col in range(picks_per_round * 2):
+                if col > 0:
+                    fade_out.append(FadeOut(self.grid[row][col], shift=DOWN, scale=0.5))
+                else:
+                    old_obj = self.grid[row][col]
+                    new_sq = Square(side_length=square_size, color=GREY)
+                    new_sq.move_to(old_obj.get_center())
+                    new_sq.set_fill(GREY, opacity=0.7)
+                    new_sq.set_stroke(GREY, width=1)
+                    fade_out.append(ReplacementTransform(old_obj, new_sq))
+                    
+                    # Update tracking grid reference
+                    self.grid[row][col] = new_sq
+
+        self.play(*fade_out, run_time=2)
+        self.wait(2)
+
+        # --- 4. Re-arrange Remaining Squares & Year Labels to the Bottom ---
         
+        # Group remaining column-0 squares together
+        remaining_squares = VGroup(*[self.grid[row][0] for row in range(rows)])
+        
+        # Prepare target positions using MoveToTarget
+        remaining_squares.generate_target()
+        remaining_squares.target.arrange(RIGHT, buff=square_buff*3)  # Extra spacing for clarity
+        remaining_squares.target.move_to([0, -2.5, 0]) # Centers row horizontally, places it low on screen
+        
+        distribute_anims = [MoveToTarget(remaining_squares)]
+        
+        # Pull the text labels from the original layout matrix and position them under the targets
+        for row in range(rows):
+            year_label = matrix[row][0]
+            corresponding_target_sq = remaining_squares.target[row]
+            
+            year_label.generate_target()
+            
+            # Scale down slightly so the rotated labels don't crash into each other
+            year_label.target.scale(0.8) 
+            
+            # Rotate dynamically (45 degrees)
+            year_label.target.rotate(45 * DEGREES)
+            
+            # Snap it right below the square's bottom edge with a small buffer
+            year_label.target.next_to(corresponding_target_sq, DOWN, buff=0.15)
+            
+            distribute_anims.append(MoveToTarget(year_label))
+            
+        # Execute all movements concurrently
+        self.play(*distribute_anims, run_time=2)
+
+        
+        self.wait(2)
+        # --- 5. Transform Squares into a Bar Chart ---
+        bar_anims = []
+        
+        for row in range(rows):
+            sq = self.grid[row][0]
+            
+            # Save the original baseline Y-coordinate before stretching
+            original_bottom_y = sq.get_bottom()[1]
+            
+            # Generate random visual properties
+            random_height = random.uniform(0.5, 4.0)
+            random_color = random.choice(sample_colors)
+            
+            sq.generate_target()
+            
+            # 1. Stretch the target's height
+            sq.target.stretch_to_fit_height(random_height)
+            sq.target.stretch_to_fit_width(square_size)
+            
+            # 2. FIX: Lock the bottom edge back down to where the square originally sat
+            sq.target.align_to([0, original_bottom_y, 0], DOWN)
+            
+            # 3. Apply color styling
+            sq.target.set_fill(random_color, opacity=0.8)
+            sq.target.set_stroke(random_color, width=1.5)
+            
+            bar_anims.append(MoveToTarget(sq))
+            
+        # Animate the bars growing upward simultaneously
+        self.play(*bar_anims, run_time=1.5, rate_func=linear)
+
         self.wait(2)
