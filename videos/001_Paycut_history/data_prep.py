@@ -30,9 +30,9 @@ from nba_manim.players import all_players
 
 VIDEO_SLUG = "001_paycut_history"
 
-# Salary data on bref gets sparse/unreliable before the 2000s — see
+# Initial prep only with 2000. To explore consistency of salary data before.
 # players/Notes.md philosophy of only pulling what a video actually needs.
-MIN_DEBUT_YEAR = 2000
+MIN_DEBUT_YEAR = 1999
 
 
 def _target_player_ids() -> list[str]:
@@ -41,24 +41,29 @@ def _target_player_ids() -> list[str]:
     return players.loc[players["From"] >= MIN_DEBUT_YEAR, "bref_id"].tolist()
 
 
-def _fetch(player_id: str) -> int:
+def _append_combined(new_rows: pd.DataFrame, out_path: Path) -> None:
     """
-    Runs one player through the pipeline; returns the row count purely so
-    ScrapeJob's log has something readable per item. The actual data
-    lands in loaders.py's per-player parquet cache, not in this return
-    value — see _combine_all() below for how it's collected back up.
+    Merges one player's rows into the video-level combined parquet,
+    replacing any prior rows for the same bref_id — safe to call again on
+    a retry. Written via a temp file + replace so a crash mid-write never
+    leaves out_path truncated/corrupt; the previous good version survives.
+
+    out_path and scrape_log.csv are a pair — a player marked 'done' in the
+    log is never re-fetched, so don't delete out_path without also
+    clearing the log entries you want re-collected into it.
     """
-    return len(get_salary_history_by_id(player_id))
-
-
-def _combine_all(player_ids: list[str]) -> pd.DataFrame:
-    """Gathers every player's cached salary history into one video-level table."""
-    frames = []
-    for player_id in player_ids:
-        cache_path = Path(PATHS["cache"]) / f"{player_id}_salaries.parquet"
-        if cache_path.exists():
-            frames.append(pd.read_parquet(cache_path))
-    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    if new_rows.empty:
+        return
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    if out_path.exists():
+        existing = pd.read_parquet(out_path)
+        existing = existing[~existing["bref_id"].isin(new_rows["bref_id"].unique())]
+        combined = pd.concat([existing, new_rows], ignore_index=True)
+    else:
+        combined = new_rows
+    tmp_path = out_path.with_suffix(".tmp")
+    combined.to_parquet(tmp_path)
+    tmp_path.replace(out_path)
 
 
 def main() -> None:
@@ -66,22 +71,35 @@ def main() -> None:
     player_ids = _target_player_ids()
     print(f"{len(player_ids)} players debuted {MIN_DEBUT_YEAR}+, running scrape job...")
 
+    out_path = Path(PATHS["cache"]) / VIDEO_SLUG / "all_salaries.parquet"
+
+    def fetch(player_id: str) -> int:
+        """
+        Runs one player through the pipeline; the row count is returned
+        purely so ScrapeJob's log has something readable per item. The
+        per-player parquet cache in loaders.py is the durable source, but
+        each successful fetch also folds straight into out_path so the
+        video-level table stays complete as the job runs, not just at the
+        very end.
+        """
+        df = get_salary_history_by_id(player_id)
+        _append_combined(df, out_path)
+        return len(df)
+
     job = ScrapeJob(
         items=player_ids,
-        fetch_fn=_fetch,
+        fetch_fn=fetch,
         log_path=video_dir / "scrape_log.csv",
     )
     job.run()
 
-    combined = _combine_all(player_ids)
-    missing = len(player_ids) - combined["bref_id"].nunique() if not combined.empty else len(player_ids)
+    combined = pd.read_parquet(out_path) if out_path.exists() else pd.DataFrame()
+    scraped_ids = set(combined["bref_id"].unique()) if not combined.empty else set()
+    missing = len(player_ids) - len(scraped_ids)
     if missing:
         print(f"{missing} players have no cached salary data (no salary table on bref, or permanently failed — see scrape_log.csv)")
 
-    out_path = Path(PATHS["cache"]) / VIDEO_SLUG / "all_salaries.parquet"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    combined.to_parquet(out_path)
-    print(f"Saved {len(combined)} rows across {combined['bref_id'].nunique() if not combined.empty else 0} players -> {out_path}")
+    print(f"Saved {len(combined)} rows across {len(scraped_ids)} players -> {out_path}")
 
 
 if __name__ == "__main__":

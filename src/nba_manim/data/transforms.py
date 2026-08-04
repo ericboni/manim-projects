@@ -13,10 +13,30 @@ import pandas as pd
 
 
 def parse_dollar_string(value: str) -> float:
-    """'$52.6M' -> 52_600_000.0, '$8,000,000' -> 8_000_000.0"""
+    """
+    '$52.6M' -> 52_600_000.0, '$8,000,000' -> 8_000_000.0
+
+    bref's salary column also carries a few non-numeric contract markers
+    that aren't dollar amounts:
+      - '(TW)' — two-way contract, no salary disclosed for that season.
+      - '$1,500,000 (TW)' — two-way contract WITH a disclosed salary; the
+        '(TW)' is just an annotation appended after the real number, so it
+        is stripped rather than treated as part of the value.
+      - '< $Minimum' — player earned less than a prorated minimum deal;
+        bref doesn't give the exact figure.
+    All of these resolve to NaN (unknown/undisclosed), not $0 — bref's own
+    sort-key attribute for '< $Minimum' rows is '0', but that's a sort
+    placeholder, not a real earnings figure.
+    """
     if pd.isna(value):
         return float("nan")
-    s = str(value).strip().replace("$", "").replace(",", "")
+    s = str(value).strip()
+    s = re.sub(r"\s*\([A-Za-z]+\)\s*$", "", s).strip()  # drop trailing "(TW)"-style annotation
+    if not s or s.startswith("<"):
+        return float("nan")
+    s = s.replace("$", "").replace(",", "")
+    if not re.fullmatch(r"\d+(\.\d+)?[MK]?", s, re.IGNORECASE):
+        return float("nan")
     multiplier = 1
     if s.upper().endswith("M"):
         multiplier = 1_000_000

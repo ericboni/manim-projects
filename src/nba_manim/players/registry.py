@@ -90,6 +90,14 @@ def get_player_by_id(player_id: str) -> dict | None:
         return None
     return match.iloc[0].to_dict()
 
+def get_player_by_bre_f_id(bref_id: str) -> dict | None:
+    """Direct lookup by bref_id when you already have it."""
+    df = _load_registry()
+    match = df[df["bref_id"] == bref_id]
+    if match.empty:
+        return None
+    return match.iloc[0].to_dict()
+
 
 def headshot_path(player_id: str) -> Path:
     """
