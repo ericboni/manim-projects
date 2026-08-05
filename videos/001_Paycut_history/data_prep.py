@@ -32,13 +32,14 @@ VIDEO_SLUG = "001_paycut_history"
 
 # Initial prep only with 2000. To explore consistency of salary data before.
 # players/Notes.md philosophy of only pulling what a video actually needs.
-MIN_DEBUT_YEAR = 1999
+MIN_DEBUT_YEAR = 1980
+MAX_DEBUT_YEAR = 2001
 
 
 def _target_player_ids() -> list[str]:
     players = all_players()
     players = players.assign(From=pd.to_numeric(players["From"], errors="coerce"))
-    return players.loc[players["From"] >= MIN_DEBUT_YEAR, "bref_id"].tolist()
+    return players.loc[(players["From"] >= MIN_DEBUT_YEAR) & (players["From"] <= MAX_DEBUT_YEAR), "bref_id"].tolist()
 
 
 def _append_combined(new_rows: pd.DataFrame, out_path: Path) -> None:
@@ -69,7 +70,7 @@ def _append_combined(new_rows: pd.DataFrame, out_path: Path) -> None:
 def main() -> None:
     video_dir = Path(__file__).parent
     player_ids = _target_player_ids()
-    print(f"{len(player_ids)} players debuted {MIN_DEBUT_YEAR}+, running scrape job...")
+    print(f"{len(player_ids)} players debuted between {MIN_DEBUT_YEAR} and {MAX_DEBUT_YEAR}, running scrape job...")
 
     out_path = Path(PATHS["cache"]) / VIDEO_SLUG / "all_salaries.parquet"
 
